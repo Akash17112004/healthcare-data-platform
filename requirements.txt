@@ -1,0 +1,6 @@
+pyspark>=4.0        # needs Java 17 or 21
+pandas>=2.0
+numpy>=1.24
+matplotlib>=3.7
+pyarrow>=14.0       # used by the tests to read Parquet
+pytest>=8.0         # optional: only for the validation tests

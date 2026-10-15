@@ -1,0 +1,17 @@
+# generated data - rebuilt deterministically by run_pipeline.py
+data/*
+!data/.gitkeep
+
+# python / tooling
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+
+# spark
+spark-warehouse/
+metastore_db/
+derby.log
