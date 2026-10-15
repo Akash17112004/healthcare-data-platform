@@ -7,6 +7,22 @@ validated, rejects quarantined) → **PySpark processing** (KPIs, trends, vitals
 
 > All data is **simulated** with a fixed random seed. No real patient information is used.
 
+## Overview
+Hospitals keep registration, admission and bedside-monitoring data in separate systems, each with its own
+formats and errors. This project shows how to turn that raw, inconsistent data into something an analyst can
+trust. It ingests a CSV export, a database table and a paginated REST API, preserves every raw record with full
+lineage, cleans and validates it (while keeping every rejected record for review), and uses PySpark to produce
+department KPIs, monthly trends, clinical vitals alerts and a **30-day readmission label** that a prediction
+model can learn from.
+
+**Key features**
+- Three source types in one pipeline: CSV, relational database, paginated REST API
+- Bronze → Silver → processed layers stored as Parquet, with `_source_system`, `_batch_id`, `_ingested_at`, `_row_hash` lineage
+- Data-quality handling: duplicates, nulls, wrong types, inconsistent values, invalid and orphan records
+- Quarantine table with the reason each record was rejected, and a reconciliation check: `bronze = silver + duplicates + quarantine`
+- PySpark processing: broadcast joins, aggregations and pivot, Spark SQL, window functions (`lag`, `lead`, `row_number`, `dense_rank`, rolling averages)
+- 10 automated validation tests, a one-command runner and an Airflow DAG
+
 ```
  SOURCES (simulated)                  BRONZE                  SILVER                          PROCESSED (PySpark)
  patients_registry.csv   (CSV)   ─┐   data/bronze/patients ─┐ data/silver/patients   ─┐
