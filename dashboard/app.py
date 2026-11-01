@@ -29,16 +29,18 @@ def load(folder: str) -> pd.DataFrame:
     return pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
 
 
-if not (C.PREDICTIONS / "readmission_predictions").exists():
-    st.error("Pipeline outputs not found. Run `python run_pipeline.py` first, then reload this page.")
+# Live pipeline output if it exists, otherwise the committed snapshot (what the hosted dashboard uses)
+DATA = C.DATA if (C.PREDICTIONS / "readmission_predictions").exists() else ROOT / "dashboard" / "data"
+if not (DATA / "predictions" / "readmission_predictions").exists():
+    st.error("No pipeline outputs found. Run `python run_pipeline.py` first, then reload this page.")
     st.stop()
 
-ml = load(str(C.GOLD / "ml_dataset"))
-alerts = load(str(C.GOLD / "vitals_alert_rates"))
-pred = load(str(C.PREDICTIONS / "readmission_predictions"))
-comparison = load(str(C.PREDICTIONS / "model_comparison.parquet"))
-importance = load(str(C.PREDICTIONS / "feature_importance.parquet"))
-roc = load(str(C.PREDICTIONS / "roc_curve.parquet"))
+ml = load(str(DATA / "gold" / "ml_dataset"))
+alerts = load(str(DATA / "gold" / "vitals_alert_rates"))
+pred = load(str(DATA / "predictions" / "readmission_predictions"))
+comparison = load(str(DATA / "predictions" / "model_comparison.parquet"))
+importance = load(str(DATA / "predictions" / "feature_importance.parquet"))
+roc = load(str(DATA / "predictions" / "roc_curve.parquet"))
 report = json.loads((C.REPORTS / "model_report.json").read_text())
 
 # ── sidebar filters ─────────────────────────────────────────────────────────

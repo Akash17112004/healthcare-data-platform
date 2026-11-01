@@ -23,6 +23,7 @@ from pyspark.ml.functions import vector_to_array  # noqa: E402
 from pyspark.sql import functions as F  # noqa: E402
 
 from . import config as C  # noqa: E402
+from . import snapshot  # noqa: E402
 from .gold import FEATURE_CATEGORICAL, FEATURE_NUMERIC, LABEL  # noqa: E402
 from .utils import to_pandas  # noqa: E402
 
@@ -172,6 +173,7 @@ def run(spark) -> None:
     print(f"[model] top-20% highest-risk patients contain {100 * capture_top20:.1f}% of all readmissions (lift {lift_top20:.2f}x)")
     print("[model] top features:", ", ".join(imp.head(6)["feature"]))
     print(f"[model] saved predictions ({predictions.count():,} rows), metrics, importance and the fitted pipeline")
+    snapshot.run()   # small copy of the outputs for the hosted dashboard
 
 
 def _figures(fpr, tpr, auc, imp, comparison, best_name):

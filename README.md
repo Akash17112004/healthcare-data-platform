@@ -52,7 +52,7 @@ glitches). Reports built on this are unreliable and avoidable 30-day readmission
 | Processing | `src/processing.py` | Filtering, broadcast join, transformations, aggregations + pivot, Spark SQL (CTE, window `RANK`) and window functions (`row_number`, `lag`, `lead`, running totals, rolling averages, `dense_rank`) |
 | Gold | `src/gold.py` | `ml_dataset` (features known at discharge + label, with `label_observable` / `in_model_population` flags), `department_monthly`, `vitals_alert_rates`, `kpi_summary` |
 | Model | `src/model.py` | MLlib `Pipeline`s (StringIndexer → OneHotEncoder → VectorAssembler → classifier), patient-level 70/15/15 split, model selection on validation PR-AUC, threshold tuned on validation, evaluation on test, predictions + metrics to Parquet, fitted pipeline saved |
-| Dashboard | `dashboard/app.py` | Streamlit app with five tabs and sidebar filters; every number is read from the Gold / prediction outputs |
+| Dashboard | `dashboard/app.py` | Streamlit app with five tabs and sidebar filters; every number is read from the Gold / prediction outputs (or `dashboard/data/`, the snapshot written by `src/snapshot.py`) |
 
 Stages run in this order: `generate → bronze → silver → process → gold → model`.
 
@@ -121,6 +121,17 @@ heart rate, length of stay.
 ![trends](reports/figures/admissions_and_readmissions.png)
 ![model](reports/figures/model_performance.png)
 
+## Hosting the dashboard (free, public link)
+The dashboard can run without Spark: `dashboard/data/` holds a small snapshot (about 0.5 MB) of the Gold and prediction
+outputs, refreshed automatically at the end of the model stage. The app uses `data/` when it exists and the snapshot otherwise.
+
+1. Push the repository to GitHub (the snapshot is committed).
+2. Go to [share.streamlit.io](https://share.streamlit.io), sign in with GitHub and choose **Create app**.
+3. Pick this repository, branch `main`, main file path `dashboard/app.py`. It installs `dashboard/requirements.txt`.
+4. Click **Deploy**. You get a public `*.streamlit.app` link to share.
+
+After re-running the pipeline, commit the refreshed `dashboard/data/` and push; the hosted app updates itself.
+
 ## Project layout
 
 ```
@@ -128,7 +139,7 @@ healthcare-data-platform/
 ├── run_pipeline.py            # entry point: runs the stages in order
 ├── requirements.txt
 ├── src/                       # one module per stage (generate, bronze, silver, processing, gold, model) + helpers
-├── dashboard/app.py           # Streamlit dashboard
+├── dashboard/                 # Streamlit app, its light requirements and a committed data snapshot
 ├── tests/                     # validation tests for the finished pipeline
 ├── airflow/dags/              # DAG: generate >> bronze >> silver >> process >> validate
 ├── notebooks/                 # narrated notebook version with saved outputs
