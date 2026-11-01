@@ -1,0 +1,16 @@
+feature,importance
+age,0.0844
+is_chronic,0.0747
+avg_glucose,0.074
+avg_hr,0.0418
+length_of_stay_days,0.0397
+hr_change_first_to_last,0.0395
+max_systolic_bp,0.039
+days_since_last_discharge,0.0386
+total_bill,0.0371
+has_hypertension_i,0.0365
+max_hr,0.0361
+cost_per_day,0.0357
+max_temp_c,0.032
+has_diabetes_i,0.0311
+alerts_per_reading,0.03

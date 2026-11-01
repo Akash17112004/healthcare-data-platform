@@ -1,6 +1,9 @@
-pyspark>=4.0        # needs Java 17 or 21
+pyspark>=4.0        # needs Java 17 or 21; includes MLlib
 pandas>=2.0
 numpy>=1.24
 matplotlib>=3.7
-pyarrow>=14.0       # used by the tests to read Parquet
-pytest>=8.0         # optional: only for the validation tests
+pyarrow>=14.0       # reading Parquet in the dashboard and tests
+streamlit>=1.50     # interactive dashboard
+plotly>=5.20        # dashboard charts
+pytest>=8.0         # validation tests
+# apache-airflow>=2.9   # optional: only needed to run airflow/dags/healthcare_pipeline_dag.py

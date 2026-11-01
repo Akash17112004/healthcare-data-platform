@@ -9,6 +9,9 @@ RAW = DATA / "raw"
 BRONZE = DATA / "bronze"
 SILVER = DATA / "silver"
 PROCESSED = DATA / "processed"
+GOLD = DATA / "gold"
+PREDICTIONS = DATA / "predictions"
+MODELS = DATA / "models"
 QUARANTINE = DATA / "quarantine"
 REPORTS = ROOT / "reports"
 FIGURES = REPORTS / "figures"
@@ -22,8 +25,8 @@ PAGE_SIZE = 3000                   # rows per page of the mock vitals API
 
 def reset_workspace() -> None:
     """Delete and recreate every data folder so each run is reproducible."""
-    for folder in (RAW, BRONZE, SILVER, PROCESSED, QUARANTINE):
+    for folder in (RAW, BRONZE, SILVER, PROCESSED, GOLD, PREDICTIONS, MODELS, QUARANTINE):
         if folder.exists():
             shutil.rmtree(folder)
-    for folder in (RAW / "vitals_api", BRONZE, SILVER, PROCESSED, QUARANTINE, FIGURES):
+    for folder in (RAW / "vitals_api", BRONZE, SILVER, PROCESSED, GOLD, PREDICTIONS, MODELS, QUARANTINE, FIGURES):
         folder.mkdir(parents=True, exist_ok=True)

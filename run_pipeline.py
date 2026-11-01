@@ -4,7 +4,7 @@
     python run_pipeline.py                  # all stages, fresh data
     python run_pipeline.py --stage silver   # a single stage (needs the earlier ones to have run)
 
-Stages: generate -> bronze -> silver -> process
+Stages: generate -> bronze -> silver -> process -> gold -> model
 """
 import argparse
 import time
@@ -12,10 +12,10 @@ import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-from src import bronze, config, generate_sources, processing, silver  # noqa: E402
+from src import bronze, config, generate_sources, gold, model, processing, silver  # noqa: E402
 from src.spark_session import get_spark  # noqa: E402
 
-STAGES = ["generate", "bronze", "silver", "process"]
+STAGES = ["generate", "bronze", "silver", "process", "gold", "model"]
 
 
 def main() -> None:
@@ -41,6 +41,10 @@ def main() -> None:
             silver.run(spark)
         elif stage == "process":
             processing.run(spark)
+        elif stage == "gold":
+            gold.run(spark)
+        elif stage == "model":
+            model.run(spark)
         print(f"[{stage}] finished in {time.time() - t0:.1f}s")
     print(f"\nPipeline finished in {time.time() - start:.1f}s")
     if spark:

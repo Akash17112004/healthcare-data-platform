@@ -1,0 +1,4 @@
+model,val_roc_auc,val_pr_auc,test_roc_auc
+LogisticRegression,0.6314,0.4044,0.6023
+RandomForest,0.652,0.4205,0.6121
+GradientBoostedTrees,0.6172,0.3683,0.5978

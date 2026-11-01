@@ -182,9 +182,26 @@ def _gen_admissions(truth):
         admit = C.START + timedelta(days=random.randint(0, 715), hours=random.randint(0, 23), minutes=random.randint(0, 59))
         base.append(_make_adm(truth, pids, random.choices(pids, p_weights)[0], admit))
 
-    follow_ups = []  # ~14% of admissions are followed by a re-admission within 2-28 days
+    # ~14% of admissions are followed by a re-admission within 2-28 days. The chance is NOT flat: it rises with
+    # severity, age, chronic conditions, emergency admission and longer stays (a plausible, deliberately moderate
+    # relationship) so that the later prediction model has real signal to learn. The intercept is solved so the
+    # overall rate stays at 14%.
+    def _risk_logit(a):
+        t = truth[a["patient_id"]]
+        return (0.30 * (a["severity"] - 3) + 0.50 * (t["dia"] + t["htn"]) + 0.020 * (t["age"] - 50)
+                + 0.45 * (a["admission_type"] == "Emergency") + 0.06 * (a["los"] - 4))
+
+    eligible = [a for a in base if a["outcome"] != "Deceased"]
+    logits = np.array([_risk_logit(a) for a in eligible])
+    lo, hi = -8.0, 4.0
+    for _ in range(60):  # bisection on the intercept
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if (1 / (1 + np.exp(-(logits + mid)))).mean() < 0.14 else (lo, mid)
+    intercept = (lo + hi) / 2
+
+    follow_ups = []
     for a in base:
-        if a["outcome"] != "Deceased" and random.random() < 0.14:
+        if a["outcome"] != "Deceased" and random.random() < 1 / (1 + np.exp(-(_risk_logit(a) + intercept))):
             nxt = a["discharge"] + timedelta(days=random.randint(2, 28), hours=random.randint(0, 23))
             if nxt < C.REF_DATE - timedelta(days=10):
                 follow_ups.append(_make_adm(truth, pids, a["patient_id"], nxt,

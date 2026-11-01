@@ -13,7 +13,7 @@ PROJECT_DIR = os.environ.get("PROJECT_DIR", "/opt/airflow/healthcare-data-platfo
 
 with DAG(
     dag_id="smart_healthcare_medallion_pipeline",
-    description="Sources -> Bronze -> Silver -> PySpark processing -> validation",
+    description="Sources -> Bronze -> Silver -> PySpark processing -> Gold -> MLlib model -> validation",
     schedule="@daily",
     start_date=datetime(2026, 10, 1),
     catchup=False,
@@ -26,6 +26,10 @@ with DAG(
     bronze = stage("bronze")
     silver = stage("silver")
     process = stage("process")
+    gold = stage("gold")           # business-ready + model-ready datasets
+    model = stage("model")         # train / evaluate the MLlib classifier, write predictions
     validate = BashOperator(task_id="validate_outputs", bash_command=f"cd {PROJECT_DIR} && python -m pytest -q tests")
 
-    generate >> bronze >> silver >> process >> validate
+    generate >> bronze >> silver >> process >> gold >> model >> validate
+    # The Streamlit dashboard (dashboard/app.py) reads the outputs of these stages. It is a long-running
+    # service, so it is started once with `streamlit run dashboard/app.py` rather than as a DAG task.

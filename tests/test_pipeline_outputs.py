@@ -1,9 +1,11 @@
 """Validation tests for the finished pipeline (run `python run_pipeline.py` first, then `pytest`).
 
 They check the guarantees the pipeline promises: nothing lost, no duplicate keys, referential
-integrity, valid ranges, and a well-formed prediction label.
+integrity, valid ranges, a well-formed prediction label, a leakage-free Gold layer, and a model whose
+predictions are well-formed and genuinely better than chance.
 """
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -16,7 +18,7 @@ pytestmark = pytest.mark.skipif(not (DATA / "processed").exists(), reason="run r
 
 def load(layer, name):
     folder = DATA / layer / name
-    files = sorted(folder.rglob("*.parquet"))  # explicit file list: pyarrow would skip '_ingest_date=...' folders
+    files = [folder] if folder.is_file() else sorted(folder.rglob("*.parquet"))  # explicit file list: pyarrow would skip '_ingest_date=...' folders
     return pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
 
 
@@ -94,3 +96,76 @@ def test_processed_label_is_binary_and_consistent():
     f = feat.sort_values(["patient_id", "admit_ts"])
     nxt = f.groupby("patient_id")["is_readmission_30d"].shift(-1).fillna(0)
     assert (nxt == f["readmitted_within_30d"]).all()
+
+
+# ───────────────────────── Gold layer (step 6) ─────────────────────────
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+
+def test_gold_dataset_covers_every_silver_admission_and_has_no_leaky_features():
+    from src import gold
+    ml = load("gold", "ml_dataset")
+    assert len(ml) == len(load("silver", "admissions")) and ml["admission_id"].is_unique
+    assert not (gold.LEAKY & set(gold.FEATURE_NUMERIC + gold.FEATURE_CATEGORICAL))
+    assert set(gold.FEATURE_NUMERIC + gold.FEATURE_CATEGORICAL) <= set(ml.columns)
+    assert ml[gold.FEATURE_NUMERIC].notna().all().all(), "model features must be fully imputed"
+
+
+def test_gold_modelling_population_excludes_deceased_and_open_followup_windows():
+    from src import config
+    ml = load("gold", "ml_dataset")
+    pop = ml[ml["in_model_population"]]
+    assert (pop["outcome"] != "Deceased").all()
+    assert (pop["discharge_ts"] <= pd.Timestamp(config.REF_DATE) - pd.Timedelta(days=30)).all()
+    assert 0.05 < pop["readmitted_within_30d"].mean() < 0.60
+
+
+def test_gold_kpis_agree_with_silver():
+    kpi = load("gold", "kpi_summary").iloc[0]
+    adm = load("silver", "admissions")
+    assert kpi["admissions"] == len(adm) and kpi["patients"] == adm["patient_id"].nunique()
+    assert load("gold", "department_monthly")["admissions"].sum() == len(adm)
+
+
+# ───────────────────────── Model + predictions (steps 7-8) ─────────────────────────
+def test_predictions_are_well_formed_and_cover_every_admission():
+    pred = load("predictions", "readmission_predictions")
+    assert len(pred) == len(load("silver", "admissions")) and pred["admission_id"].is_unique
+    assert pred["probability"].between(0, 1).all()
+    assert set(pred["risk_band"]) <= {"Low", "Medium", "High"}
+    assert set(pred["split"]) <= {"train", "validation", "test", "not_modelled"}
+    assert set(pred["predicted_readmit"]) <= {0, 1}
+
+
+def test_train_validation_test_split_is_patient_disjoint():
+    pred = load("predictions", "readmission_predictions")
+    sets = {s: set(pred.loc[pred["split"] == s, "patient_id"]) for s in ("train", "validation", "test")}
+    assert not sets["train"] & sets["test"] and not sets["train"] & sets["validation"] and not sets["validation"] & sets["test"]
+
+
+def test_model_beats_chance_on_held_out_test_patients():
+    rep = json.loads((ROOT / "reports" / "model_report.json").read_text())
+    assert rep["test_roc_auc"] > 0.55
+    assert rep["test_pr_auc"] > rep["test_pr_auc_baseline"]
+    assert rep["top20pct_lift"] > 1.0
+
+
+def test_higher_predicted_risk_means_higher_actual_readmission_rate():
+    test = load("predictions", "readmission_predictions").query("split == 'test'")
+    rate = test.groupby("risk_band")["actual_readmitted_30d"].mean()
+    assert rate["High"] > rate["Medium"] > rate["Low"]
+
+
+def test_saved_model_exists():
+    assert (DATA / "models" / "readmission_pipeline" / "metadata").exists()
+
+
+# ───────────────────────── Dashboard (step 9) ─────────────────────────
+def test_dashboard_renders_from_pipeline_outputs():
+    pytest.importorskip("streamlit")
+    pytest.importorskip("plotly")
+    from streamlit.testing.v1 import AppTest
+    at = AppTest.from_file(str(ROOT / "dashboard" / "app.py"), default_timeout=120).run()
+    assert not at.exception, [e.value for e in at.exception]
+    assert {"Admissions", "Test ROC-AUC", "Patients to follow up"} <= {m.label for m in at.metric}

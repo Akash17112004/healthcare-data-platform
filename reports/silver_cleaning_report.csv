@@ -1,15 +1,15 @@
 entity,check,rows
-admissions,bronze rows,6083
-admissions,silver rows,5464
-admissions,severity missing -> imputed,215
-admissions,bill missing -> imputed (dept+severity median),200
-admissions,duplicates removed,148
-admissions,quarantined: missing_or_unparseable_discharge_date,130
-admissions,quarantined: non_positive_bill,107
-admissions,quarantined: discharge_before_admit,97
-admissions,quarantined: orphan_patient_not_in_registry,72
-admissions,quarantined: missing_patient_id,34
-admissions,quarantined: missing_or_unparseable_admit_date,31
+admissions,bronze rows,6040
+admissions,silver rows,5435
+admissions,severity missing -> imputed,209
+admissions,bill missing -> imputed (dept+severity median),202
+admissions,duplicates removed,147
+admissions,quarantined: missing_or_unparseable_discharge_date,122
+admissions,quarantined: non_positive_bill,106
+admissions,quarantined: discharge_before_admit,98
+admissions,quarantined: orphan_patient_not_in_registry,70
+admissions,quarantined: missing_patient_id,32
+admissions,quarantined: missing_or_unparseable_admit_date,30
 patients,bronze rows,1566
 patients,silver rows,1500
 patients,gender spellings standardized,1158
@@ -17,18 +17,18 @@ patients,missing city -> 'Unknown',81
 patients,invalid/missing DOB -> age imputed,66
 patients,duplicates removed (older versions),60
 patients,quarantined: missing patient_id,6
-vitals,bronze rows,33229
-vitals,silver rows,29132
-vitals,remaining NULL cells imputed (patient/global median),11201
-vitals,quarantined: orphan_or_missing_admission,2854
-vitals,duplicates removed (API replays),967
-vitals,impossible heart_rate -> NULL (sensor error),509
-vitals,impossible spo2 -> NULL (sensor error),503
+vitals,bronze rows,32987
+vitals,silver rows,28974
+vitals,remaining NULL cells imputed (patient/global median),11139
+vitals,quarantined: orphan_or_missing_admission,2777
+vitals,duplicates removed (API replays),960
+vitals,impossible heart_rate -> NULL (sensor error),507
+vitals,impossible spo2 -> NULL (sensor error),499
 vitals,impossible systolic_bp -> NULL (sensor error),324
 vitals,impossible diastolic_bp -> NULL (sensor error),324
-vitals,impossible temperature_c -> NULL (sensor error),320
-vitals,patient_id repaired from admission link,278
+vitals,impossible temperature_c -> NULL (sensor error),318
 vitals,quarantined: missing_or_unparseable_timestamp,275
+vitals,patient_id repaired from admission link,272
 vitals,quarantined: fewer_than_3_valid_vitals,1
-vitals,impossible blood_glucose -> NULL (sensor error),1
+vitals,impossible blood_glucose -> NULL (sensor error),0
 vitals,impossible respiration_rate -> NULL (sensor error),0
